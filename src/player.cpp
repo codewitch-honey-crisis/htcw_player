@@ -37,14 +37,7 @@ typedef struct wav_info {
     unsigned long long length;
     unsigned long long pos;
 } wav_info_t;
-static void player_yield() {
-    static uint32_t last_yield = (uint32_t)pdTICKS_TO_MS(xTaskGetTickCount());
-    uint32_t ms = (uint32_t)pdTICKS_TO_MS(xTaskGetTickCount());
-    if(ms>last_yield+500) {
-        last_yield = ms;
-        vTaskDelay(5);
-    }
-}
+
 static bool player_read32(on_read_stream_callback on_read_stream, void* on_read_stream_state,uint32_t* out) {
     uint32_t res = 0;
     int v = on_read_stream(on_read_stream_state);
