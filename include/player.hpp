@@ -52,7 +52,13 @@ class player final {
     bool realloc_buffer();
 public:
     // construct the player with the specified arguments
-    player(unsigned int sample_rate = 44100, unsigned short channels = 2, unsigned short bit_depth = 16, size_t frame_count = 512, void*(allocator)(size_t)=::malloc,void*(reallocator)(void*,size_t)=::realloc,void(deallocator)(void*)=::free);
+    player(unsigned int sample_rate = 44100, 
+        unsigned short channels = 2, 
+        unsigned short bit_depth = 16, 
+        size_t frame_count = 256, 
+        void*(allocator)(size_t)=::malloc,
+        void*(reallocator)(void*,size_t)=::realloc,
+        void(deallocator)(void*)=::free);
     player(player&& rhs);
     ~player();
     player& operator=(player&& rhs);
@@ -71,9 +77,17 @@ public:
     // plays a triangle wave at the specified frequency and amplitude
     voice_handle_t tri(unsigned short port, float frequency, float amplitude = .8);
     // plays RIFF PCM wav data at the specified amplitude, optionally looping
-    voice_handle_t wav(unsigned short port, on_read_stream_callback on_read_stream, void* on_read_stream_state, float amplitude = .8, bool loop = false,on_seek_stream_callback on_seek_stream = nullptr, void* on_seek_stream_state=nullptr);
+    voice_handle_t wav(unsigned short port, 
+                    on_read_stream_callback on_read_stream, 
+                    void* on_read_stream_state, 
+                    float amplitude = .8, 
+                    bool loop = false,
+                    on_seek_stream_callback on_seek_stream = nullptr, 
+                    void* on_seek_stream_state=nullptr);
     // plays a custom voice
-    voice_handle_t voice(unsigned short port, voice_function_t fn, void* state = nullptr);
+    voice_handle_t voice(unsigned short port, 
+                        voice_function_t fn, 
+                        void* state = nullptr);
     // stops a playing voice, or all playing voices
     bool stop(voice_handle_t handle = nullptr);
     // stops a playing voice, or all playing voices
@@ -84,8 +98,9 @@ public:
     void on_sound_enable(on_sound_enable_callback cb, void* state=nullptr);
     // set the flush callback (always necessary)
     void on_flush(on_flush_callback cb, void* state=nullptr);
-    // a frame is every sample for every channel on a given a tick. A stereo frame would have two samples.
-    // this is the count of frames in the mixing buffer
+    // A frame is every sample for every channel on a given a tick.
+    // A stereo frame would have two samples.
+    // This is the count of frames in the mixing buffer.
     size_t frame_count() const;
     // assign a new frame count
     bool frame_count(size_t value);
@@ -114,5 +129,4 @@ public:
     T* allocate_voice_state() const {
         return (T*)m_allocator(sizeof(T));
     }
-
 };

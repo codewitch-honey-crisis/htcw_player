@@ -38,7 +38,9 @@ typedef struct wav_info {
     unsigned long long pos;
 } wav_info_t;
 
-static bool player_read32(on_read_stream_callback on_read_stream, void* on_read_stream_state,uint32_t* out) {
+static bool player_read32(on_read_stream_callback on_read_stream, 
+                            void* on_read_stream_state,
+                            uint32_t* out) {
     uint32_t res = 0;
     int v = on_read_stream(on_read_stream_state);
     if(v==-1) {
@@ -68,7 +70,9 @@ static bool player_read32(on_read_stream_callback on_read_stream, void* on_read_
     return true;
 }
 
-static bool player_read16(on_read_stream_callback on_read_stream, void* on_read_stream_state,uint16_t* out) {
+static bool player_read16(on_read_stream_callback on_read_stream, 
+                            void* on_read_stream_state,
+                            uint16_t* out) {
     uint16_t res = 0;
     int v = on_read_stream(on_read_stream_state);
     if(v==-1) {
@@ -85,7 +89,9 @@ static bool player_read16(on_read_stream_callback on_read_stream, void* on_read_
     *out = res;
     return true;
 }
-static bool player_read8s(on_read_stream_callback on_read_stream, void* on_read_stream_state,int8_t* out) {
+static bool player_read8s(on_read_stream_callback on_read_stream, 
+                            void* on_read_stream_state,
+                            int8_t* out) {
     uint8_t res = 0;
     int i = on_read_stream(on_read_stream_state);
     if(0>i) {
@@ -96,14 +102,18 @@ static bool player_read8s(on_read_stream_callback on_read_stream, void* on_read_
     return true;
 }
 
-static bool player_read16s(on_read_stream_callback on_read_stream, void* on_read_stream_state,int16_t* out) {
+static bool player_read16s(on_read_stream_callback on_read_stream, 
+                            void* on_read_stream_state,
+                            int16_t* out) {
     uint16_t res = 0;
     if(player_read16(on_read_stream,on_read_stream_state,&res)) {
         *out = (int16_t)res;
     }
     return true;
 }
-static bool player_read_fourcc(on_read_stream_callback on_read_stream, void* on_read_stream_state, char* buf) {
+static bool player_read_fourcc(on_read_stream_callback on_read_stream, 
+                                void* on_read_stream_state, 
+                                char* buf) {
     for(int i = 0;i<4;++i) {
         int v = on_read_stream(on_read_stream_state);
         if(v==-1) {
@@ -434,11 +444,27 @@ static void wav_voice_16_1_to_8_1(const voice_function_info_t& info, void*state)
     }
 }
 
-static voice_handle_t player_add_voice(unsigned char port, voice_handle_t* in_out_first, voice_function_t fn, void* fn_state, void*(allocator)(size_t)) {
+static voice_handle_t player_add_voice(unsigned char port, 
+                                        voice_handle_t* in_out_first, 
+                                        voice_function_t fn, 
+                                        void* fn_state, 
+                                        void*(allocator)(size_t)) {
     voice_info_t** pv = (voice_info_t**)in_out_first;
     voice_info_t* v = *pv;
     if(v!=nullptr) {
-        while(v->next!=nullptr && v->port<=port) {
+        if(port<v->port) {
+            voice_info_t* pnew = (voice_info_t*)allocator(sizeof(voice_info_t));
+            if(pnew==nullptr) {
+                return nullptr;
+            }
+            pnew->port = port;
+            pnew->next = v;
+            pnew->fn = fn;
+            pnew->fn_state = fn_state;
+            *in_out_first = pnew;
+            v= pnew;
+        }
+        while(v->next!=nullptr && v->next->port<=port) {
             v=v->next;
         }
         v->next = (voice_info_t*)allocator(sizeof(voice_info_t));
@@ -460,7 +486,9 @@ static voice_handle_t player_add_voice(unsigned char port, voice_handle_t* in_ou
     }
    return v;
 }
-static bool player_remove_voice(voice_handle_t* in_out_first,voice_handle_t handle,void(deallocator)(void*)) {
+static bool player_remove_voice(voice_handle_t* in_out_first,
+                                voice_handle_t handle,
+                                void(deallocator)(void*)) {
     voice_info_t** pv = (voice_info_t**)in_out_first;
     voice_info_t* v = *pv;
     if(v==nullptr) {return false;}
@@ -492,7 +520,9 @@ static bool player_remove_voice(voice_handle_t* in_out_first,voice_handle_t hand
     }
     return true;
 }
-static bool player_remove_port(voice_handle_t* in_out_first,unsigned short port,void(deallocator)(void*)) {
+static bool player_remove_port(voice_handle_t* in_out_first,
+                            unsigned short port,
+                            void(deallocator)(void*)) {
     voice_info_t** pv = (voice_info_t**)in_out_first;
     voice_info_t* v = *pv;
     voice_info_t* ov = nullptr;
@@ -541,7 +571,13 @@ void player::do_move(player& rhs) {
     m_reallocator = rhs.m_reallocator;
     m_deallocator = rhs.m_deallocator;
 }
-player::player(unsigned int sample_rate, unsigned short channel_count, unsigned short bit_depth, size_t frame_count, void*(allocator)(size_t), void*(reallocator)(void*,size_t), void(deallocator)(void*)) :
+player::player(unsigned int sample_rate, 
+            unsigned short channel_count, 
+            unsigned short bit_depth, 
+            size_t frame_count, 
+            void*(allocator)(size_t), 
+            void*(reallocator)(void*,size_t), 
+            void(deallocator)(void*)) :
                 m_first(nullptr),
                 m_buffer(nullptr),
                 m_frame_count(frame_count),
@@ -590,7 +626,13 @@ void player::deinitialize() {
     m_deallocator(m_buffer);
     m_buffer = nullptr;
 }
-static voice_handle_t player_waveform(unsigned short port, unsigned int sample_rate,voice_handle_t* in_out_first, voice_function_t fn, float frequency, float amplitude, void*(allocator)(size_t)) {
+static voice_handle_t player_waveform(unsigned short port, 
+                                    unsigned int sample_rate,
+                                    voice_handle_t* in_out_first, 
+                                    voice_function_t fn, 
+                                    float frequency, 
+                                    float amplitude, 
+                                    void*(allocator)(size_t)) {
     waveform_info_t* wi = (waveform_info_t*)allocator(sizeof(waveform_info_t));
     if(wi==nullptr) {
         return nullptr;
@@ -602,23 +644,51 @@ static voice_handle_t player_waveform(unsigned short port, unsigned int sample_r
     return player_add_voice(port, in_out_first,fn,wi,allocator);
 }
 voice_handle_t player::sin(unsigned short port, float frequency, float amplitude) {
-    voice_handle_t result = player_waveform(port,m_sample_rate,&m_first,sin_voice,frequency,amplitude,m_allocator);
+    voice_handle_t result = player_waveform(port,
+                                            m_sample_rate,
+                                            &m_first,
+                                            sin_voice,
+                                            frequency,
+                                            amplitude,
+                                            m_allocator);
     return result;
 }
 voice_handle_t player::sqr(unsigned short port, float frequency, float amplitude) {
-    voice_handle_t result = player_waveform(port,m_sample_rate,&m_first,sqr_voice,frequency,amplitude,m_allocator);
+    voice_handle_t result = player_waveform(port,
+                                            m_sample_rate,
+                                            &m_first,
+                                            sqr_voice,
+                                            frequency,
+                                            amplitude,
+                                            m_allocator);
     return result;
 }
 voice_handle_t player::saw(unsigned short port, float frequency, float amplitude) {
-    voice_handle_t result = player_waveform(port,m_sample_rate,&m_first,saw_voice,frequency,amplitude,m_allocator);
+    voice_handle_t result = player_waveform(port,
+                                            m_sample_rate,
+                                            &m_first,
+                                            saw_voice,
+                                            frequency,
+                                            amplitude,
+                                            m_allocator);
     return result;
 }
 voice_handle_t player::tri(unsigned short port, float frequency, float amplitude) {
-    voice_handle_t result = player_waveform(port,m_sample_rate,&m_first,tri_voice,frequency,amplitude,m_allocator);
+    voice_handle_t result = player_waveform(port,
+                                            m_sample_rate,
+                                            &m_first,
+                                            tri_voice,
+                                            frequency,
+                                            amplitude,
+                                            m_allocator);
     return result;
 }
-
-voice_handle_t player::wav(unsigned short port, on_read_stream_callback on_read_stream, void* on_read_stream_state, float amplitude, bool loop, on_seek_stream_callback on_seek_stream, void* on_seek_stream_state) {
+voice_handle_t player::wav(unsigned short port, 
+                        on_read_stream_callback on_read_stream, 
+                        void* on_read_stream_state, float amplitude, 
+                        bool loop, 
+                        on_seek_stream_callback on_seek_stream, 
+                        void* on_seek_stream_state) {
     if(on_read_stream==nullptr) {
         return nullptr;
     }
