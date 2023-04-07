@@ -8,9 +8,7 @@
 #include <string.h>
 #define PI (3.1415926535f)
 #endif
-#include <freertos/FreeRTOS.h>
-#include <freertos/task.h>
-#include <freertos/semphr.h>
+
 constexpr static const float player_pi = PI;
 constexpr static const float player_two_pi = player_pi*2.0f;
 
