@@ -1,0 +1,31 @@
+{
+    "name": "htcw_player",
+    "version": "0.1.0",
+    "description": "Provides a simple polyphonic audio player",
+    "keywords": ["audio","sound","voice", "wav"],
+    "authors": {
+        "name":"honey the codewitch",
+        "homepage": "https://www.codeproject.com/Members/code-witch"
+    },
+    "license": "MIT",
+    "frameworks": "*",
+    "platforms": "*",
+    "examples": [
+        {
+            "name": "Demo",
+            "base": "examples/demo",
+            "files": [
+                "platformio.ini",
+                "include/test.hpp",
+                "src/ai_thinker.cpp",
+                "src/fire.cpp",
+                "src/core2.cpp"
+            ]
+        }
+    ],
+    "repository":
+    {
+        "type": "git",
+        "url": "https://github.com/codewitch-honey-crisis/htcw_player.git"
+    }
+}
