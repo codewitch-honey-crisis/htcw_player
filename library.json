@@ -1,6 +1,6 @@
 {
     "name": "htcw_player",
-    "version": "0.1.3",
+    "version": "0.1.4",
     "description": "Provides a simple polyphonic audio player",
     "keywords": ["audio","sound","voice", "wav"],
     "authors": {

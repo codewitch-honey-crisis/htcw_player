@@ -48,7 +48,6 @@ class player final {
     player(const player& rhs)=delete;
     player& operator=(const player& rhs)=delete;
     void do_move(player& rhs);
-    static void task(void* state);
     bool realloc_buffer();
 public:
     // construct the player with the specified arguments

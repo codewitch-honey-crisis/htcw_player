@@ -449,41 +449,45 @@ static voice_handle_t player_add_voice(unsigned char port,
                                         voice_function_t fn, 
                                         void* fn_state, 
                                         void*(allocator)(size_t)) {
-    voice_info_t** pv = (voice_info_t**)in_out_first;
-    voice_info_t* v = *pv;
-    if(v!=nullptr) {
-        if(port<v->port) {
-            voice_info_t* pnew = (voice_info_t*)allocator(sizeof(voice_info_t));
-            if(pnew==nullptr) {
-                return nullptr;
-            }
-            pnew->port = port;
-            pnew->next = v;
-            pnew->fn = fn;
-            pnew->fn_state = fn_state;
-            *in_out_first = pnew;
-            v= pnew;
-        }
-        while(v->next!=nullptr && v->next->port<=port) {
-            v=v->next;
-        }
-        v->next = (voice_info_t*)allocator(sizeof(voice_info_t));
-        if(v->next==nullptr) {
+    voice_info_t* pnew;
+    if(*in_out_first==nullptr) {
+        pnew = (voice_info_t*)allocator(sizeof(voice_info_t));
+        if(pnew==nullptr) {
             return nullptr;
         }
-        v->next->port = port;
-        v->next->next = nullptr;
-        v->next->fn = fn;
-        v->next->fn_state = fn_state;
-        v=v->next;
-    } else {
-        *pv = (voice_info_t*)allocator(sizeof(voice_info_t));
-        v=*pv;
-        v->port = port;
-        v->next = nullptr;
-        v->fn = fn;
-        v->fn_state = fn_state;
+        pnew->port = port;
+        pnew->next = nullptr;
+        pnew->fn = fn;
+        pnew->fn_state = fn_state;
+        *in_out_first = pnew;
+        return pnew;
     }
+    voice_info_t* v = (voice_info_t*)*in_out_first;
+    if(v->port>port) {
+        pnew = (voice_info_t*)allocator(sizeof(voice_info_t));
+        if(pnew==nullptr) {
+            return nullptr;
+        }
+        pnew->port = port;
+        pnew->next = v;
+        pnew->fn = fn;
+        pnew->fn_state = fn_state;
+        *in_out_first = pnew;
+        return pnew;
+    }
+    while(v->next!=nullptr && v->next->port<=port) {
+        v=v->next;
+    }
+    voice_info_t* vnext = v->next;
+    pnew = (voice_info_t*)allocator(sizeof(voice_info_t));
+    if(pnew==nullptr) {
+        return nullptr;
+    }
+    pnew->port = port;
+    pnew->next = vnext;
+    pnew->fn = fn;
+    pnew->fn_state = fn_state;
+    v->next = pnew;
    return v;
 }
 static bool player_remove_voice(voice_handle_t* in_out_first,
@@ -516,37 +520,39 @@ static bool player_remove_voice(voice_handle_t* in_out_first,
             v->next = nullptr;
         }
         deallocator(to_free);
-        deallocator(to_free2);
+        if(to_free2!=nullptr) {
+            deallocator(to_free2);
+        }
     }
     return true;
 }
 static bool player_remove_port(voice_handle_t* in_out_first,
                             unsigned short port,
                             void(deallocator)(void*)) {
-    voice_info_t** pv = (voice_info_t**)in_out_first;
-    voice_info_t* v = *pv;
-    voice_info_t* ov = nullptr;
-    if(v==nullptr) {return false;}
-    bool result = false;
-    while(v!=nullptr && v->port<=port) {
-        if(v->port==port) {
-            voice_info_t* to_free = v;
-            void* to_free2 = v->fn_state;
-            ov->next = v->next;
-            if(v==(voice_handle_t)*in_out_first) {
-                *in_out_first = (voice_info_t*)v->next;
-            }
-            v=v->next;
-            deallocator(to_free);
-            deallocator(to_free2);
-            result = true;
-            
-        } else {
-            v=v->next;
-        }
-        ov = v;
+    voice_info_t* first = (voice_info_t*)(*in_out_first);
+    voice_info_t* before = nullptr;
+    while(first->port<port) {
+        before = first;
+        first = first->next;
     }
-    return result;
+    if(first==nullptr || first->port>port) {
+        return false;
+    }
+    voice_info_t* after = first->next;
+    while(after!=nullptr && after->port==port) {
+        void* to_free = after;
+        if(after->fn_state!=nullptr) {
+            deallocator(after->fn_state);
+        }
+        after=after->next;
+        deallocator(to_free);
+    }
+    if(before!=nullptr) {
+        before->next = after;
+    } else {
+        *in_out_first = after;
+    }
+    return true;
 }
 
 void player::do_move(player& rhs) {
