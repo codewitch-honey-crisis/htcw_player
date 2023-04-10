@@ -87,10 +87,10 @@ public:
     voice_handle_t voice(unsigned short port, 
                         voice_function_t fn, 
                         void* state = nullptr);
-    // stops a playing voice, or all playing voices
+    // stops a playing voice, or all voices
     bool stop(voice_handle_t handle = nullptr);
-    // stops a playing voice, or all playing voices
-    bool stop(unsigned short port);
+    // stops all playing voices on a port
+    bool stop_port(unsigned short port);
     // set the sound disable callback
     void on_sound_disable(on_sound_disable_callback cb, void* state=nullptr);
     // set the sound enable callback

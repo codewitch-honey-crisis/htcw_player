@@ -531,13 +531,15 @@ static bool player_remove_port(voice_handle_t* in_out_first,
                             void(deallocator)(void*)) {
     voice_info_t* first = (voice_info_t*)(*in_out_first);
     voice_info_t* before = nullptr;
-    while(first->port<port) {
+    
+    while(first!=nullptr && first->port<port) {
         before = first;
         first = first->next;
     }
     if(first==nullptr || first->port>port) {
         return false;
     }
+    
     voice_info_t* after = first->next;
     while(after!=nullptr && after->port==port) {
         void* to_free = after;
@@ -552,6 +554,7 @@ static bool player_remove_port(voice_handle_t* in_out_first,
     } else {
         *in_out_first = after;
     }
+
     return true;
 }
 
@@ -903,7 +906,7 @@ bool player::stop(voice_handle_t handle) {
     bool result = player_remove_voice(&m_first,handle,m_deallocator);
     return result;
 }
-bool player::stop(unsigned short port) {
+bool player::stop_port(unsigned short port) {
     if(m_first==nullptr) {
         return false;
     }
