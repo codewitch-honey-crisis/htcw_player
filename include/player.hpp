@@ -35,6 +35,7 @@ class player final {
     unsigned int m_channel_count;
     unsigned int m_bit_depth;
     unsigned int m_sample_max;
+    bool m_auto_disable;
     bool m_sound_enabled;
     on_sound_disable_callback m_on_sound_disable_cb;
     void* m_on_sound_disable_state;
@@ -121,6 +122,10 @@ public:
     size_t bytes_per_second() {
         return m_sample_rate*m_channel_count*(m_bit_depth/8);
     }
+    bool auto_disable() const;
+    void auto_disable(bool value);
+    bool sound_enabled() const;
+    void sound_enabled(bool value);
     // give a timeslice to the player to update itself
     void update();
     // allocates memory for a custom voice state

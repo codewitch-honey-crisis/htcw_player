@@ -567,6 +567,7 @@ void player::do_move(player& rhs) {
     rhs.m_frame_count = 0;
     m_sample_rate = rhs.m_sample_rate;
     m_sample_max = rhs.m_sample_max;
+    m_auto_disable = rhs.m_auto_disable;
     m_sound_enabled = rhs.m_sound_enabled;
     m_on_sound_disable_cb=rhs.m_on_sound_disable_cb;
     rhs.m_on_sound_enable_cb = nullptr;
@@ -593,6 +594,8 @@ player::player(unsigned int sample_rate,
                 m_sample_rate(sample_rate),
                 m_channel_count(channel_count),
                 m_bit_depth(bit_depth),
+                m_auto_disable(true),
+                m_sound_enabled(false),
                 m_on_sound_disable_cb(nullptr),
                 m_on_sound_disable_state(nullptr),
                 m_on_sound_enable_cb(nullptr),
@@ -624,7 +627,12 @@ bool player::initialize() {
         return false;
     }
     m_sample_max = powf(2,m_bit_depth)-1;
-    m_sound_enabled = false;
+    if(m_auto_disable==false) {
+        m_sound_enabled = true;
+        if(m_on_sound_enable_cb!=nullptr) {
+            m_on_sound_enable_cb(m_on_sound_enable_state);
+        }
+    }
     return true;
 }
 void player::deinitialize() {
@@ -632,8 +640,14 @@ void player::deinitialize() {
         return;
     }
     stop();
+    if(m_on_sound_disable_cb!=nullptr) {
+        m_on_sound_disable_cb(m_on_sound_disable_state);
+        m_sound_enabled=false;
+    }
     m_deallocator(m_buffer);
     m_buffer = nullptr;
+    
+
 }
 static voice_handle_t player_waveform(unsigned short port, 
                                     unsigned int sample_rate,
@@ -648,8 +662,9 @@ static voice_handle_t player_waveform(unsigned short port,
     }
     wi->frequency = frequency;
     wi->amplitude = amplitude;
-    wi->phase = 0;
     wi->phase_delta = player_two_pi*wi->frequency/(float)sample_rate;
+    wi->phase = wi->phase_delta*0.5f;
+    
     return player_add_voice(port, in_out_first,fn,wi,allocator);
 }
 voice_handle_t player::sin(unsigned short port, float frequency, float amplitude) {
@@ -1013,17 +1028,99 @@ void player::update() {
     vinf.sample_max = m_sample_max;
     voice_info_t* v = first;
     memset(m_buffer,0,buffer_size);
-    while(v!=nullptr) {
-        has_voices = true;
-        v->fn(vinf, v->fn_state);
-        v=v->next;
+    if(m_auto_disable) {
+        while(v!=nullptr) {
+            has_voices = true;
+            v->fn(vinf, v->fn_state);
+            v=v->next;
+        }
+        if(has_voices) {
+            if(!m_sound_enabled) {
+                if(m_on_sound_enable_cb!=nullptr) {
+                    m_on_sound_enable_cb(m_on_sound_enable_state);
+                }
+                m_sound_enabled = true;   
+            }
+        } else {
+            if(m_sound_enabled) {
+                if(m_on_sound_disable_cb!=nullptr) {
+                    m_on_sound_disable_cb(m_on_sound_disable_state);
+                }
+                m_sound_enabled = false;
+            }
+        }
+        if(m_sound_enabled && m_on_flush_cb!=nullptr) {
+            m_on_flush_cb(m_buffer, buffer_size, m_on_flush_state);
+        }
+    } else {
+        if(v==nullptr){
+            switch(m_bit_depth) {
+                case 8: {
+                    uint8_t* p = (uint8_t*)m_buffer;
+                    for(int i = 0;i<m_frame_count;++i) {
+                        for(int j = 0;j<m_channel_count;++j) {
+                            *p++=127;
+                        }
+                    }
+                }
+                case 16: {
+                    uint16_t* p = (uint16_t*)m_buffer;
+                    for(int i = 0;i<m_frame_count;++i) {
+                        for(int j = 0;j<m_channel_count;++j) {
+                            *p++=32767;
+                        }
+                    }
+                }
+                break;
+            }
+
+        } else {
+            memset(m_buffer,0,buffer_size);
+            while(v!=nullptr) {
+                has_voices = true;
+                v->fn(vinf, v->fn_state);
+                v=v->next;
+            }
+        } 
+        
+        if(m_sound_enabled && m_on_flush_cb!=nullptr) {
+            m_on_flush_cb(m_buffer, buffer_size, m_on_flush_state);
+        }
     }
-    if(has_voices) {
+}
+bool player::auto_disable() const {
+    return m_auto_disable;
+}
+void player::auto_disable(bool value) {
+    if(value) {
+        if(m_first==nullptr) {
+            if(m_sound_enabled) {
+                if(m_on_sound_disable_cb!=nullptr) {
+                    m_on_sound_disable_cb(m_on_sound_disable_state);
+                }
+                m_sound_enabled = false;
+            }
+        } else {
+            if(!m_sound_enabled) {
+                if(m_on_sound_enable_cb!=nullptr) {
+                    m_on_sound_enable_cb(m_on_sound_enable_state);
+                }
+                m_sound_enabled = true;
+            }
+        }
+    }
+    m_auto_disable = value;
+}
+bool player::sound_enabled() const {
+    return m_sound_enabled;
+}
+void player::sound_enabled(bool value) {
+    if(value) {
         if(!m_sound_enabled) {
             if(m_on_sound_enable_cb!=nullptr) {
                 m_on_sound_enable_cb(m_on_sound_enable_state);
             }
-            m_sound_enabled = true;   
+            m_sound_enabled = true;
         }
     } else {
         if(m_sound_enabled) {
@@ -1032,8 +1129,5 @@ void player::update() {
             }
             m_sound_enabled = false;
         }
-    }
-    if(m_sound_enabled && m_on_flush_cb!=nullptr) {
-        m_on_flush_cb(m_buffer, buffer_size, m_on_flush_state);
     }
 }
