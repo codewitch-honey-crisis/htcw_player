@@ -25,9 +25,9 @@ typedef struct {
     float phase_delta;
 } waveform_info_t;
 typedef struct wav_info {
-    on_read_stream_callback on_read_stream;
+    player_on_read_stream_callback on_read_stream;
     void* on_read_stream_state;
-    on_seek_stream_callback on_seek_stream;
+    player_on_seek_stream_callback on_seek_stream;
     void* on_seek_stream_state;
     float amplitude;
     bool loop;
@@ -38,7 +38,7 @@ typedef struct wav_info {
     unsigned long long pos;
 } wav_info_t;
 
-static bool player_read32(on_read_stream_callback on_read_stream, 
+static bool player_read32(player_on_read_stream_callback on_read_stream, 
                             void* on_read_stream_state,
                             uint32_t* out) {
     uint32_t res = 0;
@@ -70,7 +70,7 @@ static bool player_read32(on_read_stream_callback on_read_stream,
     return true;
 }
 
-static bool player_read16(on_read_stream_callback on_read_stream, 
+static bool player_read16(player_on_read_stream_callback on_read_stream, 
                             void* on_read_stream_state,
                             uint16_t* out) {
     uint16_t res = 0;
@@ -89,7 +89,7 @@ static bool player_read16(on_read_stream_callback on_read_stream,
     *out = res;
     return true;
 }
-static bool player_read8s(on_read_stream_callback on_read_stream, 
+static bool player_read8s(player_on_read_stream_callback on_read_stream, 
                             void* on_read_stream_state,
                             int8_t* out) {
     uint8_t res = 0;
@@ -102,7 +102,7 @@ static bool player_read8s(on_read_stream_callback on_read_stream,
     return true;
 }
 
-static bool player_read16s(on_read_stream_callback on_read_stream, 
+static bool player_read16s(player_on_read_stream_callback on_read_stream, 
                             void* on_read_stream_state,
                             int16_t* out) {
     uint16_t res = 0;
@@ -111,7 +111,7 @@ static bool player_read16s(on_read_stream_callback on_read_stream,
     }
     return true;
 }
-static bool player_read_fourcc(on_read_stream_callback on_read_stream, 
+static bool player_read_fourcc(player_on_read_stream_callback on_read_stream, 
                                 void* on_read_stream_state, 
                                 char* buf) {
     for(int i = 0;i<4;++i) {
@@ -708,10 +708,10 @@ voice_handle_t player::tri(unsigned short port, float frequency, float amplitude
     return result;
 }
 voice_handle_t player::wav(unsigned short port, 
-                        on_read_stream_callback on_read_stream, 
+                        player_on_read_stream_callback on_read_stream, 
                         void* on_read_stream_state, float amplitude, 
                         bool loop, 
-                        on_seek_stream_callback on_seek_stream, 
+                        player_on_seek_stream_callback on_seek_stream, 
                         void* on_seek_stream_state) {
     if(on_read_stream==nullptr) {
         return nullptr;
@@ -927,15 +927,15 @@ bool player::stop_port(unsigned short port) {
     }
     return player_remove_port(&m_first,port,m_deallocator);
 }
-void player::on_sound_disable(on_sound_disable_callback cb, void* state) {
+void player::on_sound_disable(player_on_sound_disable_callback cb, void* state) {
     m_on_sound_disable_cb = cb;
     m_on_sound_disable_state = state;
 }
-void player::on_sound_enable(on_sound_enable_callback cb, void* state) {
+void player::on_sound_enable(player_on_sound_enable_callback cb, void* state) {
     m_on_sound_enable_cb = cb;
     m_on_sound_enable_state = state;
 }
-void player::on_flush(on_flush_callback cb, void* state) {
+void player::on_flush(player_on_flush_callback cb, void* state) {
     m_on_flush_cb = cb;
     m_on_flush_state = state;
 }

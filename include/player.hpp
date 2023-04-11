@@ -17,15 +17,15 @@ typedef void (*voice_function_t)(const voice_function_info_t& info, void* state)
 // the handle to refer to a playing voice
 typedef void* voice_handle_t;
 // called when the sound output should be disabled
-typedef void (*on_sound_disable_callback)(void* state);
+typedef void (*player_on_sound_disable_callback)(void* state);
 // called when the sound output should be enabled
-typedef void (*on_sound_enable_callback)(void* state);
+typedef void (*player_on_sound_enable_callback)(void* state);
 // called when there's sound data to send to the output
-typedef void (*on_flush_callback)(const void* buffer, size_t buffer_size, void* state);
+typedef void (*player_on_flush_callback)(const void* buffer, size_t buffer_size, void* state);
 // called to read a byte off a stream
-typedef int (*on_read_stream_callback)(void* state);
+typedef int (*player_on_read_stream_callback)(void* state);
 // called to seek a stream
-typedef void (*on_seek_stream_callback)(unsigned long long pos, void* state);
+typedef void (*player_on_seek_stream_callback)(unsigned long long pos, void* state);
 // represents a polyphonic player capable of playing wavs or various waveforms
 class player final {
     voice_handle_t m_first;
@@ -37,11 +37,11 @@ class player final {
     unsigned int m_sample_max;
     bool m_auto_disable;
     bool m_sound_enabled;
-    on_sound_disable_callback m_on_sound_disable_cb;
+    player_on_sound_disable_callback m_on_sound_disable_cb;
     void* m_on_sound_disable_state;
-    on_sound_enable_callback m_on_sound_enable_cb;
+    player_on_sound_enable_callback m_on_sound_enable_cb;
     void* m_on_sound_enable_state;
-    on_flush_callback m_on_flush_cb;
+    player_on_flush_callback m_on_flush_cb;
     void* m_on_flush_state;
     void*(*m_allocator)(size_t);
     void*(*m_reallocator)(void*,size_t);
@@ -78,11 +78,11 @@ public:
     voice_handle_t tri(unsigned short port, float frequency, float amplitude = .8);
     // plays RIFF PCM wav data at the specified amplitude, optionally looping
     voice_handle_t wav(unsigned short port, 
-                    on_read_stream_callback on_read_stream, 
+                    player_on_read_stream_callback on_read_stream, 
                     void* on_read_stream_state, 
                     float amplitude = .8, 
                     bool loop = false,
-                    on_seek_stream_callback on_seek_stream = nullptr, 
+                    player_on_seek_stream_callback on_seek_stream = nullptr, 
                     void* on_seek_stream_state=nullptr);
     // plays a custom voice
     voice_handle_t voice(unsigned short port, 
@@ -93,11 +93,11 @@ public:
     // stops all playing voices on a port
     bool stop_port(unsigned short port);
     // set the sound disable callback
-    void on_sound_disable(on_sound_disable_callback cb, void* state=nullptr);
+    void on_sound_disable(player_on_sound_disable_callback cb, void* state=nullptr);
     // set the sound enable callback
-    void on_sound_enable(on_sound_enable_callback cb, void* state=nullptr);
+    void on_sound_enable(player_on_sound_enable_callback cb, void* state=nullptr);
     // set the flush callback (always necessary)
-    void on_flush(on_flush_callback cb, void* state=nullptr);
+    void on_flush(player_on_flush_callback cb, void* state=nullptr);
     // A frame is every sample for every channel on a given a tick.
     // A stereo frame would have two samples.
     // This is the count of frames in the mixing buffer.
