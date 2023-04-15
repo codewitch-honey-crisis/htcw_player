@@ -89,7 +89,7 @@ static bool player_read16(player_on_read_stream_callback on_read_stream,
     *out = res;
     return true;
 }
-static bool player_read8s(player_on_read_stream_callback on_read_stream, 
+/*static bool player_read8s(player_on_read_stream_callback on_read_stream, 
                             void* on_read_stream_state,
                             int8_t* out) {
     uint8_t res = 0;
@@ -100,7 +100,7 @@ static bool player_read8s(player_on_read_stream_callback on_read_stream,
     res = i;
     *out = (int8_t)res;
     return true;
-}
+}*/
 
 static bool player_read16s(player_on_read_stream_callback on_read_stream, 
                             void* on_read_stream_state,
@@ -1063,6 +1063,7 @@ void player::update() {
                         }
                     }
                 }
+                break;
                 case 16: {
                     uint16_t* p = (uint16_t*)m_buffer;
                     for(int i = 0;i<m_frame_count;++i) {
